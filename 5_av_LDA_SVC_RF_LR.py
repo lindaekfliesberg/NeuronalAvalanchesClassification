@@ -6,8 +6,8 @@ Features: Neuronal avalanches
 Classifiers: LDA, SVC, RF and LR
 
 + statistical analysis using MOABB
-+
-+
++ comparison between pipelines
+
 ==========================================================================
 """
 
@@ -40,6 +40,10 @@ import moabb.analysis.plotting as moabb_plt
 from moabb.analysis.meta_analysis import compute_dataset_statistics, find_significant_differences
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches
+
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -134,7 +138,7 @@ for f in freqbands: # the code iterates over each frequency band
             for idx, (train, test) in enumerate(cv.split(X_, y_)): # The code iterates over each split of the cross-validator (cv.split(X_, y_)).
                 for ppn, ppl in tqdm(pipeline.items(), total=len(pipeline), desc="pipelines"): #The code iterates over each pipeline (pipeline.items()), where pipeline is a dictionary of classifier pipelines.
                     cvclf = clone(ppl) #A clone of the current pipeline (clone(ppl)) is created
-                    cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])). ValueError: cannot reshape array of size 651984 into shape (1,9588)
+                    cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])).
                     yp = cvclf.predict(X_[test]) #The predictions of the classifier on the test data (cvclf.predict(X_[test])) are assigned to yp.
                     acc = balanced_accuracy_score(y_[test], yp) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
                     auc = roc_auc_score(y_[test], yp) # ROC AUC (Area Under the Receiver Operating Characteristic Curve) is a measure of the trade-off between true positive rate (TPR) and false positive rate (FPR) at different classification thresholds. It is commonly used to evaluate binary classifiers and is a useful metric when the classes are not heavily imbalanced.
@@ -160,12 +164,11 @@ for f in freqbands: # the code iterates over each frequency band
                     }
                     dataset_av.append(res)
 dataset_av = pd.DataFrame(dataset_av)
-# print(dataset_av)
-dataset_av.to_csv("./Dataframes/av_classification.csv")
+dataset_av.to_csv(df_path+"av_classification.csv")
 
 ## concat the dataframe with the results from classification_comparison
-dataset_av = pd.read_csv("./Dataframes/av_classification.csv")
-dataset_fc = pd.read_csv("./Dataframes/fc_LDA_SVC.csv")
+dataset_av = pd.read_csv(df_path+"av_classification.csv")
+dataset_fc = pd.read_csv(df_path+"fc_LDA_SVC.csv")
 concat_fc_av = pd.concat((dataset_av, dataset_fc))
 
 """
@@ -173,13 +176,6 @@ concat_fc_av = pd.concat((dataset_av, dataset_fc))
 Statistical analysis and plotting
 ==========================================================================
 """
-
-## Saving all the figures in the right folder
-if os.path.basename(os.getcwd()) == "NeuronalAvalanches":
-    os.chdir("Figures")
-basedir = os.getcwd()
-
-figure_path = basedir + "/"
 
 ## statistical analysis
 stats = compute_dataset_statistics(concat_fc_av) # based on Wilcoxon tests, takes the dataframe as input and returns a table of p values for each pipeline
@@ -204,7 +200,7 @@ sns.stripplot(x="score", y="pipeline", data=concat_fc_av, size=4, color=".3", li
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-plt.savefig(figure_path+"boxplot_pipeline_comparison_group.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_group.png", dpi=300)
 plt.show()
 
 ## print averaged evaluation scores across subjects and pipelines
@@ -228,12 +224,12 @@ sns.stripplot(x="score_mean", y=pipeline_cat, data=dataset_average, size=4, colo
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-#plt.savefig(figure_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
 plt.show()
 
 ## Seaborn boxplot to compare pipelines for both fc and av at a subject level to see the differences across splits
 plt.close('all')
 g=sns.catplot(x='accuracy', y='pipeline', data=concat_fc_av, col='subject', col_wrap=5, kind='box', orient='h', whis=[0, 100], width=.6, palette="vlag")
 g.map_dataframe(sns.stripplot, x='accuracy', y='pipeline', data=concat_fc_av, orient='h', palette=["#404040"])
-#plt.savefig(figure_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
 plt.show()

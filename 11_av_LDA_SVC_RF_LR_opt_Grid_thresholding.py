@@ -2,8 +2,7 @@
 ==========================================================================
 Neuronal avalanches - LDA, SVC, random forest & logistic regression
 
-Hyperparameter tuning and ranking of the features
-+ thresholding different numbers of features.
++ feature selection by thresholding the top-ranking features
 ==========================================================================
 """
 
@@ -219,7 +218,7 @@ for pipeline in dataset_subject_0['pipeline'].unique():
     plt.ylabel('Score')
     plt.title(f'Pipeline {pipeline}')
     plt.show()
-    #plt.savefig(figure_path + f'Thresholding_{pipeline}.png', dpi=300)
+    plt.savefig(fig_path + f'Thresholding_{pipeline}.png', dpi=300)
 
 ## Plotting an overview of the accuracy score variance for different thresholds
 sns.catplot(data=dataset_av[dataset_av["pipeline"]=="avn-LDA"], y="score", x="threshold", col="subject", col_wrap=5)

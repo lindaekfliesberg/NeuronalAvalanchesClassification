@@ -30,6 +30,10 @@ from moabb.datasets.base import BaseDataset
 from moabb.evaluations import WithinSessionEvaluation
 from moabb.paradigms import MotorImagery
 
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
+
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
 
@@ -99,8 +103,7 @@ evaluation = WithinSessionEvaluation(
 )
 
 results = evaluation.process(pipeline)
-# results.to_csv("./CSP_LDA.csv")
-# results = pd.read_csv("./CSP_LDA.csv")
+results.to_csv(df_path+"CSP_LDA.csv")
 
 fig, ax = plt.subplots(figsize=(8, 7))
 results["subj"] = results["subject"].apply(str)

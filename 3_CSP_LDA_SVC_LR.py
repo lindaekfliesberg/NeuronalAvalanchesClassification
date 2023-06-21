@@ -2,7 +2,7 @@
 ==========================================================================
 Classification comparison on MEG data
 
-Features: CSP and Covariance + Tangent Space
+Features: CSP and covariance matrices
 Classifiers: LDA, SVC, LR
 
 + statistical analysis using MOABB
@@ -32,6 +32,10 @@ import moabb.analysis.plotting as moabb_plt
 from moabb.datasets.base import BaseDataset
 from moabb.evaluations import WithinSessionEvaluation
 from moabb.analysis.meta_analysis import compute_dataset_statistics, find_significant_differences
+
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -85,7 +89,7 @@ class MEGdataset(BaseDataset):
         return [file_path]
 
 dataset = MEGdataset()
-dataset.subject_list = dataset.subject_list[:5]
+dataset.subject_list = dataset.subject_list[:20]
 
 # choose paradigm
 paradigm = MotorImagery()
@@ -102,9 +106,7 @@ pipeline["RG+LDA"] = make_pipeline(Covariances(), TangentSpace(), LDA(solver="ls
 # evaluation
 evaluation = WithinSessionEvaluation(paradigm=paradigm, datasets=dataset, overwrite=True, suffix="newdataset")
 results = evaluation.process(pipeline)
-
-results.to_csv("./CSP_shLDA_SVC_LR.csv")
-results = pd.read_csv("./CSP_shLDA_SVC_LR.csv")
+results.to_csv(df_path+"CSP_shLDA_SVC_LR.csv")
 
 # plot the evaluation scores for each pipeline
 fig = moabb_plt.score_plot(results)

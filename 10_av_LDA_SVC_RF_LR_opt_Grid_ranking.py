@@ -1,9 +1,8 @@
 """
 ==========================================================================
-Neuronal avalanches - LDA, SVC, random forest & logistic regression
+Neuronal avalanches - Random forest
 
-Testing different hyperparameters for random forest by using GridSearchCV
-+ adding the feature importance ranking in the loop
++ adding random forest attribute feature importance ranking in the loop
 ==========================================================================
 """
 
@@ -192,12 +191,12 @@ labels = data_avalanches['labels_DK'] # Get the labels for the features
 # Rank from large to small values (used for thresholding)
 indices = np.argsort(median_importances)[::-1] # Rank the feature importances and print them
 indices = pd.DataFrame(indices)
-indices.to_csv("./avn_feature_indices_median.csv")
+indices.to_csv(df_path+"avn_feature_indices_median.csv")
 
 # # Rank from small the large values
 # indices_reversed = np.argsort(median_importances) # Rank the feature importances and print them
 # indices_reversed = pd.DataFrame(indices_reversed)
-# indices_reversed.to_csv("./avn_feature_indices_reversed_median.csv")
+# indices_reversed.to_csv(df_path+"avn_feature_indices_reversed_median.csv")
 
 # Get the top 20 features and their importance scores
 top_20_indices = indices[:20]

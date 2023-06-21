@@ -39,6 +39,10 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal
 
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
+
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
 
@@ -144,7 +148,7 @@ for f in freqbands: # the code iterates over each frequency band
                 for idx, (train, test) in enumerate(cv.split(X_, y_)): # The code iterates over each split of the cross-validator (cv.split(X_, y_)).
                     for ppn, ppl in tqdm(pipeline.items(), total=len(pipeline), desc="pipelines"): #The code iterates over each pipeline (pipeline.items()), where pipeline is a dictionary of classifier pipelines.
                         cvclf = clone(ppl) #A clone of the current pipeline (clone(ppl)) is created
-                        cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])). ValueError: cannot reshape array of size 651984 into shape (1,9588)
+                        cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])).
                         yp_test = cvclf.predict(X_[test]) #The predictions of the classifier on the test data (cvclf.predict(X_[test])) are assigned to yp.
                         yp_train = cvclf.predict(X_[train])
                         #acc = balanced_accuracy_score(y_[test], yp_test) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
@@ -178,14 +182,7 @@ for f in freqbands: # the code iterates over each frequency band
                         dataset_av.append(res)
 
 dataset_av = pd.DataFrame(dataset_av)
-dataset_av.to_csv("./avn_RF_min_samples_leaf.csv")
-
-## Saving all the figures in the right folder
-if os.path.basename(os.getcwd()) == "NeuronalAvalanches":
-    os.chdir("Figures")
-basedir = os.getcwd()
-
-figure_path = basedir + "/"
+dataset_av.to_csv(df_path+"avn_RF_min_samples_leaf.csv")
 
 #Group level
 ## print averaged evaluation scores, grouped by subjects and n_estimators
@@ -198,5 +195,5 @@ line2, = plt.plot(dataset_average_grouped["n_leafs_"], dataset_average_grouped["
 plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
 plt.ylabel('AUC score')
 plt.xlabel('min_samples_leaf')
-#plt.savefig(figure_path+"pvalue_matrix_all_subjects.png", dpi=300)
+plt.savefig(fig_path+"pvalue_matrix_all_subjects.png", dpi=300)
 plt.show()

@@ -6,7 +6,7 @@ Features: Functional connectivity
 Classifiers: LDA and SVC
 
 + statistical analysis using MOABB
-+ concatinating with dataframes
++ concatination of dataframes
 + vizualisation of functional connectivity matrices
 ==========================================================================
 """
@@ -37,6 +37,10 @@ import moabb.analysis.plotting as moabb_plt
 from moabb.analysis.meta_analysis import compute_dataset_statistics, find_significant_differences
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory
+
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -99,9 +103,9 @@ events = ["right_hand", "rest"]
 
 ## precompute all metrics for datasets, fc matrix
 # Check if the data_fc_all_subjects file exists
-if os.path.isfile("./Dataframes/data_fc_all_subjects"):
+if os.path.isfile(df_path+"data_fc_all_subjects"):
     # Load the saved data_fc dictionary from disk
-    with open("./Dataframes/data_fc_all_subjects", "rb") as f:
+    with open(df_path+"data_fc_all_subjects", "rb") as f:
         data_fc = pickle.load(f)
 else:
     data_fc = {} # empty dictionary to store all the functional connectivity matrices
@@ -117,7 +121,7 @@ else:
                 ft = FunctionalTransformer(delta=1, ratio=0.5, method=sm, fmin=fmin, fmax=fmax) #For each sm (in this case plv), a FunctionalTransformer object is created with specified parameters
                 preproc = Pipeline(steps=[("ft", ft), ("spd", EnsureSPD())]) #creating a pipeline object with two steps, ft from above and spd that ensure that the resulting matrices are symmetric positive definite.
                 data_fc[f][subject][sm] = preproc.fit_transform(ep_) #The fit_transform method of the preproc pipeline object is applied to the ep_ data, this compute the functional connectivity matrix for the given sm. The resulting functional connectivity matrix is stored in the data_fc dictionary under the f, subject, and sm keys, respectively.
-    with open("./Dataframes/data_fc_all_subjects", "wb") as f:
+    with open(df_path+"data_fc_all_subjects", "wb") as f:
         pickle.dump(data_fc, f)
 
 ## compute results
@@ -148,7 +152,7 @@ for f in freqbands: # the code iterates over each frequency band
             for idx, (train, test) in enumerate(cv.split(X_, y_)): # The code iterates over each split of the cross-validator (cv.split(X_, y_)).
                 for ppn, ppl in tqdm(pipeline.items(), total=len(pipeline), desc="pipelines"): #The code iterates over each pipeline (pipeline.items()), where pipeline is a dictionary of classifier pipelines.
                     cvclf = clone(ppl) #A clone of the current pipeline (clone(ppl)) is created
-                    cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])). IndexError: index 156 is out of bounds for axis 0 with size 155
+                    cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])).
                     yp = cvclf.predict(X_[test]) #The predictions of the classifier on the test data (cvclf.predict(X_[test])) are assigned to yp.
                     acc = balanced_accuracy_score(y_[test], yp) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
                     auc = roc_auc_score(y_[test], yp) # ROC AUC (Area Under the Receiver Operating Characteristic Curve) is a measure of the trade-off between true positive rate (TPR) and false positive rate (FPR) at different classification thresholds. It is commonly used to evaluate binary classifiers and is a useful metric when the classes are not heavily imbalanced.
@@ -174,11 +178,11 @@ for f in freqbands: # the code iterates over each frequency band
                     }
                     dataset_res.append(res)
 dataset_res = pd.DataFrame(dataset_res)
-dataset_res.to_csv("./Dataframes/fc_LDA_SVC.csv")
+dataset_res.to_csv(df_path+"fc_LDA_SVC.csv")
 
 ## concat the dataframe with the results from classification_comparison
-dataset_res = pd.read_csv("./Dataframes/fc_LDA_SVC.csv")
-dataset_CSP = pd.read_csv("./Dataframes/CSP_LDA_SVC_LR.csv")
+dataset_res = pd.read_csv(df_path+"fc_LDA_SVC.csv")
+dataset_CSP = pd.read_csv(df_path+"CSP_LDA_SVC_LR.csv")
 result_concat = pd.concat((dataset_res, dataset_CSP))
 
 ## statistical analysis

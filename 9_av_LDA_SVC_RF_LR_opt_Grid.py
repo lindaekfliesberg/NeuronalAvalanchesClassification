@@ -1,9 +1,10 @@
 """
 ==========================================================================
-Neuronal avalanches - LDA, SVC, random forest & logistic regression
+Neuronal avalanches - linear discriminant analysis, support vector machine,
+random forest & logistic regression
 
 Testing different hyperparameters for random forest by using GridSearchCV
-+ adding the feature importance ranking in the loop
+
 ==========================================================================
 """
 
@@ -120,17 +121,17 @@ for f in freqbands: # the code iterates over each frequency band
 
         pipeline = {} #creates an empty dictionary to store the classifier pipelines
         pipeline["avn-opt"+"-LDA"] = Pipeline(steps=[('gan', gan), ('lda', LDA(solver="lsqr", shrinkage="auto"))])
-        #pipeline["avn-opt"+"-SVC"] = Pipeline(steps=[('gan', gan), ('svc', GridSearchCV(SVC(), {"kernel": ("linear", "rbf"), "C": [0.1, 1, 10]}, cv=3))])
-        #pipeline["avn-opt"+"-RF"] = Pipeline(steps=[('gan', gan), ('rf', GridSearchCV(RandomForestClassifier(), {'n_estimators': [70,75,80,85,90], 'min_samples_leaf': [1,2,3], 'max_features': ['sqrt','log2'], 'max_depth': [3,5,7,9], 'random_state': [42]}, cv=5))])
-        #pipeline["avn-opt"+"-LR"] = Pipeline(steps=[('gan', gan), ('lr', LogisticRegression(penalty="elasticnet", l1_ratio=0.15, intercept_scaling=1000.0, solver="saga"))])
+        pipeline["avn-opt"+"-SVC"] = Pipeline(steps=[('gan', gan), ('svc', GridSearchCV(SVC(), {"kernel": ("linear", "rbf"), "C": [0.1, 1, 10]}, cv=3))])
+        pipeline["avn-opt"+"-RF"] = Pipeline(steps=[('gan', gan), ('rf', GridSearchCV(RandomForestClassifier(), {'n_estimators': [70,75,80,85,90], 'min_samples_leaf': [1,2,3], 'max_features': ['sqrt','log2'], 'max_depth': [3,5,7,9], 'random_state': [42]}, cv=5))])
+        pipeline["avn-opt"+"-LR"] = Pipeline(steps=[('gan', gan), ('lr', LogisticRegression(penalty="elasticnet", l1_ratio=0.15, intercept_scaling=1000.0, solver="saga"))])
 
         # Train and evaluate
         _, y, metadata = paradigm.get_data(dataset, [subject], return_epochs=True) # _ is the epoches object, y is an array of labels
         X = np.arange(len(y)) #X is created as an array of integers ranging from 0 to the length of y
         for session in np.unique(metadata.session): # the code iterates over each session in the metadata (in this case only one session)
             ix = metadata.session == session # ix is assigned to a boolean array indicating the indices in metadata.session where the value is equal to session.
-            #cv = StratifiedKFold(5, shuffle=True, random_state=42)
-            cv = StratifiedKFold(50, shuffle=True, random_state=42)
+            cv = StratifiedKFold(5, shuffle=True, random_state=42)
+            #cv = StratifiedKFold(50, shuffle=True, random_state=42)
             le = LabelEncoder() # le is created to encode the labels
             y_ = le.fit_transform(y[ix]) # le  fitted to the labels of the current session (y[ix])
             X_ = X[ix]
@@ -140,9 +141,9 @@ for f in freqbands: # the code iterates over each frequency band
                     cvclf = clone(ppl) #A clone of the current pipeline (clone(ppl)) is created
                     cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])).
                     yp = cvclf.predict(X_[test]) #The predictions of the classifier on the test data (cvclf.predict(X_[test])) are assigned to yp.
-                    #acc = balanced_accuracy_score(y_[test], yp) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
+                    acc = balanced_accuracy_score(y_[test], yp) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
                     auc = roc_auc_score(y_[test], yp) # ROC AUC (Area Under the Receiver Operating Characteristic Curve) is a measure of the trade-off between true positive rate (TPR) and false positive rate (FPR) at different classification thresholds. It is commonly used to evaluate binary classifiers and is a useful metric when the classes are not heavily imbalanced.
-                    #kapp = cohen_kappa_score(y_[test], yp) # measures the agreement between the observed and the expected agreement between two raters, accounting for the agreement that could be expected by chance.
+                    kapp = cohen_kappa_score(y_[test], yp) # measures the agreement between the observed and the expected agreement between two raters, accounting for the agreement that could be expected by chance.
 
                     res_info = {
                         "subject": subject,
@@ -158,8 +159,8 @@ for f in freqbands: # the code iterates over each frequency band
                     }
                     res = {
                         "score": auc,
-                        #"kappa": kapp,
-                        #"accuracy": acc,
+                        "kappa": kapp,
+                        "accuracy": acc,
                         "pipeline": ppn,
                         **res_info,
                     }
@@ -206,7 +207,7 @@ sns.stripplot(x="score", y="pipeline", data=concat_fc_av, size=4, color=".3", li
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-plt.savefig(figure_path+"boxplot_pipeline_comparison_group.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_group.png", dpi=300)
 plt.show()
 
 ## print averaged evaluation scores across subjects and pipelines
@@ -229,12 +230,12 @@ sns.stripplot(x="score_mean", y=pipeline_cat, data=dataset_average, size=4, colo
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-#plt.savefig(figure_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
 plt.show()
 
 ## Seaborn boxplot to compare pipelines for both fc and av at a subject level to see the differences across splits
 plt.close('all')
 g=sns.catplot(x='accuracy', y='pipeline', data=concat_fc_av, col='subject', col_wrap=5, kind='box', orient='h', whis=[0, 100], width=.6, palette="vlag")
 g.map_dataframe(sns.stripplot, x='accuracy', y='pipeline', data=concat_fc_av, orient='h', palette=["#404040"])
-plt.savefig(figure_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
+plt.savefig(fig_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
 plt.show()

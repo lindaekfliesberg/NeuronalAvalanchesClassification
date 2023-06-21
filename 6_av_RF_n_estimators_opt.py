@@ -40,6 +40,10 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal
 
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
+
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
 
@@ -88,15 +92,15 @@ class MEGdataset(BaseDataset):
             raise (ValueError("Invalid subject number"))
 
         meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        # avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
         return [meg_path, avalanches_path]
 
 dataset = MEGdataset()
 
 # Load avalanches to plot avalanche matrices
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 # list of variables
 subject_select = dataset.subject_list[:20] # select the number of subject you want to analyse
@@ -116,8 +120,8 @@ for f in freqbands: # the code iterates over each frequency band
     for subject in tqdm(subject_select, desc="subject"): # the code iterates over each subject in the list subject_select
         paradigm = MotorImagery(events=events, n_classes=len(events), fmin=fmin, fmax=fmax) #A MotorImagery object is created with the current minimum and maximum frequencies.
 
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
 
         #ga = GetAvalanches(subject, avalanches_path) # creates a GetDataMemory object (gd) with the specified subject, frequency range (f), spectral metric (plv), and the functional connectivity matrices previously computed (data_av).
         gav = GetAvalanchesNodal(subject, avalanches_path)
@@ -145,13 +149,13 @@ for f in freqbands: # the code iterates over each frequency band
                 for idx, (train, test) in enumerate(cv.split(X_, y_)): # The code iterates over each split of the cross-validator (cv.split(X_, y_)).
                     for ppn, ppl in tqdm(pipeline.items(), total=len(pipeline), desc="pipelines"): #The code iterates over each pipeline (pipeline.items()), where pipeline is a dictionary of classifier pipelines.
                         cvclf = clone(ppl) #A clone of the current pipeline (clone(ppl)) is created
-                        cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])). ValueError: cannot reshape array of size 651984 into shape (1,9588)
+                        cvclf.fit(X_[train], y_[train]) # The clone is fitted to the training data (cvclf.fit(X_[train], y_[train])).
                         yp_test = cvclf.predict(X_[test]) #The predictions of the classifier on the test data (cvclf.predict(X_[test])) are assigned to yp.
                         yp_train = cvclf.predict(X_[train])
                         #acc = balanced_accuracy_score(y_[test], yp_test) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
                         auc = roc_auc_score(y_[test], yp_test) # ROC AUC (Area Under the Receiver Operating Characteristic Curve) is a measure of the trade-off between true positive rate (TPR) and false positive rate (FPR) at different classification thresholds. It is commonly used to evaluate binary classifiers and is a useful metric when the classes are not heavily imbalanced.
                         auc_train = roc_auc_score(y_[train], yp_train)
-                        kapp = cohen_kappa_score(y_[test], yp_test) # measures the agreement between the observed and the expected agreement between two raters, accounting for the agreement that could be expected by chance.
+                        #kapp = cohen_kappa_score(y_[test], yp_test) # measures the agreement between the observed and the expected agreement between two raters, accounting for the agreement that could be expected by chance.
                         res_info = {
                             "subject": subject,
                             "session": "session_0",
@@ -171,7 +175,7 @@ for f in freqbands: # the code iterates over each frequency band
                         res = {
                             "score": auc,
                             "score_train": auc_train,
-                            "kappa": kapp,
+                            #"kappa": kapp,
                             #"accuracy": acc,
                             "pipeline": ppn,
                             **res_info,
@@ -179,14 +183,7 @@ for f in freqbands: # the code iterates over each frequency band
                         dataset_av.append(res)
 
 dataset_av = pd.DataFrame(dataset_av)
-dataset_av.to_csv("./avn_RF_n_estimators.csv")
-
-## Saving all the figures in the right folder
-if os.path.basename(os.getcwd()) == "NeuronalAvalanches":
-    os.chdir("Figures")
-basedir = os.getcwd()
-
-figure_path = basedir + "/"
+dataset_av.to_csv(df_path+"avn_RF_n_estimators.csv")
 
 #Group level
 ## print averaged evaluation scores, grouped by subjects and n_estimators
@@ -199,5 +196,5 @@ line2, = plt.plot(dataset_average_grouped["n_estimators_"], dataset_average_grou
 plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
 plt.ylabel('AUC score')
 plt.xlabel('n_estimators')
-plt.savefig(figure_path+"pvalue_matrix_all_subjects.png", dpi=300)
+plt.savefig(fig_path+"pvalue_matrix_all_subjects.png", dpi=300)
 plt.show()

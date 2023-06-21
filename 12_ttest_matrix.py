@@ -3,6 +3,7 @@
 Visualization of dataset - Mean avalanches matrix and T-test matrix
 
 + Group and individual level
++ correction for multiple comparison via FDR
 ===================================================================
 """
 
@@ -14,16 +15,15 @@ import numpy as np
 from scipy import stats
 from matplotlib import pyplot as plt
 from scipy.io import savemat
+from mne.stats import bonferroni_correction, fdr_correction
 
 # Load avalanches to plot avalanche matrices
 #data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
 data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
-if os.path.basename(os.getcwd()) == "NeuronalAvalanches":
-    os.chdir("Figures")
-basedir = os.getcwd()
-
-figure_path = basedir + "/"
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
 
 ##Plot difference between conditions (rest, right) across trials per subject
 # Extract the data and labels
@@ -47,7 +47,7 @@ plt.close('all')
 plt.imshow(diff_matrix, cmap='coolwarm', vmin=-0.2, vmax=0.2)
 plt.title('Mean matrix (Right - Rest) for subject_0')
 plt.colorbar()
-plt.savefig(figure_path+"mean_matrix_subject_0.png", dpi=300)
+plt.savefig(fig_path+"mean_matrix_subject_0.png", dpi=300)
 plt.show()
 
 ## Plot difference between conditions (rest, right) across subjects
@@ -77,7 +77,7 @@ plt.close('all')
 plt.imshow(mean_diff_matrix, cmap='coolwarm', vmin=-0.04, vmax=0.04)
 plt.title('Mean matrix (Right - Rest) for all subjects')
 plt.colorbar()
-plt.savefig(figure_path+"mean_matrix_all_subjects.png", dpi=300)
+plt.savefig(fig_path+"mean_matrix_all_subjects.png", dpi=300)
 plt.show()
 
 ## Plotting matrix containing t-test values for single subject
@@ -108,6 +108,14 @@ for i in range(68):
         ttest_matrix[i, j] = t_statistic
         pvalue_matrix[i, j] = p_value
 
+# Reshape the p-value matrix to a 1D array
+p_values = pvalue_matrix.ravel()
+# Perform FDR correction on the p-values
+_, pval_bonferroni = bonferroni_correction(p_values, alpha=0.05)
+pvalues_bonferroni_matrix = pval_bonferroni.reshape(pvalue_matrix.shape)
+_, pval_fdr = fdr_correction(p_values, alpha=0.05, method="indep")
+pvalues_fdr_corrected_matrix = pval_fdr.reshape(pvalue_matrix.shape)
+
 # Create a mask to filter p-values less than 0.05
 pvalue_mask = pvalue_matrix < 0.05
 
@@ -119,22 +127,21 @@ filtered_pvalue_matrix = np.where(pvalue_mask, pvalue_matrix, np.nan)
 savemat('av_opt_ttest_matrix_subject_2_pvalue<0.05.mat', {'ttest_matrix': filtered_ttest_matrix})
 savemat('av_opt_pvalue_matrix_subject_2_pvalue<0.05.mat', {'pvalue_matrix': filtered_pvalue_matrix})
 
-# plt.close('all')
-# # Plot the t-test matrix
-# plt.imshow(ttest_matrix, cmap='coolwarm', vmin=-5, vmax=5)
-# plt.title('T-test matrix for single subject')
-# plt.colorbar()
-# plt.savefig(figure_path+"ttest_matrix_subject_0.png", dpi=300)
-# plt.show()
-#
-# plt.close('all')
-# # Plot the p-value matrix
-# plt.imshow(pvalue_matrix, cmap='hot', vmin=0, vmax=0.05)
-# plt.title('P-value matrix for single subject')
-# plt.colorbar()
-# plt.savefig(figure_path+"pvalue_matrix_subject_0.png", dpi=300)
-# plt.show()
-#
+plt.close('all')
+# Plot the t-test matrix
+plt.imshow(ttest_matrix, cmap='coolwarm', vmin=-5, vmax=5)
+plt.title('T-test matrix for single subject')
+plt.colorbar()
+plt.savefig(fig_path+"ttest_matrix_subject_0.png", dpi=300)
+plt.show()
+
+plt.close('all')
+# Plot the p-value matrix
+plt.imshow(pvalue_matrix, cmap='hot', vmin=0, vmax=0.05)
+plt.title('P-value matrix for single subject')
+plt.colorbar()
+plt.savefig(fig_path+"pvalue_matrix_subject_0.png", dpi=300)
+plt.show()
 
 ################################################################################
 ## Plotting matrix containing t-test values for single subject (make it into an array of sums)
@@ -207,6 +214,14 @@ for i in range(68):
         ttest_matrix[i, j] = t_statistic
         pvalue_matrix[i, j] = p_value
 
+# Reshape the p-value matrix to a 1D array
+p_values = pvalue_matrix.ravel()
+# Perform FDR correction on the p-values
+_, pval_bonferroni = bonferroni_correction(p_values, alpha=0.05)
+pvalues_bonferroni_matrix = pval_bonferroni.reshape(pvalue_matrix.shape)
+_, pval_fdr = fdr_correction(p_values, alpha=0.05, method="indep")
+pvalues_fdr_corrected_matrix = pval_fdr.reshape(pvalue_matrix.shape)
+
 # Create a mask to filter p-values less than 0.05
 pvalue_mask = pvalue_matrix < 0.05
 
@@ -224,7 +239,7 @@ plt.close('all')
 plt.imshow(ttest_matrix, cmap='coolwarm')
 plt.title('T-test matrix for all subjects')
 plt.colorbar()
-plt.savefig(figure_path+"ttest_matrix_all_subjects.png", dpi=300)
+plt.savefig(fig_path+"ttest_matrix_all_subjects.png", dpi=300)
 plt.show()
 
 plt.close('all')
@@ -232,7 +247,7 @@ plt.close('all')
 plt.imshow(pvalue_matrix, cmap='hot', vmin=0, vmax=0.05)
 plt.title('P-value matrix for all subjects')
 plt.colorbar()
-plt.savefig(figure_path+"pvalue_matrix_all_subjects.png", dpi=300)
+plt.savefig(fig_path+"pvalue_matrix_all_subjects.png", dpi=300)
 plt.show()
 
 #######################################################################
