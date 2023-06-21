@@ -21,6 +21,10 @@ from moabb.datasets import BNCI2014001
 from moabb.evaluations import WithinSessionEvaluation
 from moabb.paradigms import LeftRightImagery
 
+root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
+df_path = root_path + '/Dataframes/'
+fig_path = root_path + '/Figures/'
+
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
 
@@ -43,8 +47,7 @@ scores = evaluation.process(pipeline)
 print(scores)
 
 results = evaluation.process(pipeline)
-# results.to_csv("./results_part2-1.csv")
-# results = pd.read_csv("./results_part2-1.csv")
+results.to_csv(df_path+"CSP_LDA.csv")
 
 fig, ax = plt.subplots(figsize=(8, 7))
 results["subj"] = results["subject"].apply(str)
