@@ -1,8 +1,9 @@
 """
 ==========================================================================
-Neuronal avalanches - Random forest
+Neuronal avalanches - LDA, SVC, random forest & logistic regression
 
-+ adding random forest attribute feature importance ranking in the loop
+Testing different hyperparameters for random forest by using GridSearchCV
++ adding the feature importance ranking in the loop
 ==========================================================================
 """
 
@@ -11,8 +12,6 @@ import warnings
 
 import mne
 import mat73
-import pickle
-import os.path
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -37,12 +36,27 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal
 
-moabb.set_log_level("info")
-warnings.filterwarnings("ignore")
-
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data and the neuronal avalanche transition matrices
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
+# avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
+
+moabb.set_log_level("info")
+warnings.filterwarnings("ignore")
 
 ## create class for the MEG data
 class MEGdataset(BaseDataset):
@@ -88,16 +102,9 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
         return [meg_path, avalanches_path]
 
 dataset = MEGdataset()
-
-# Load avalanches to plot avalanche matrices
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 # list of variables
 subject_select = dataset.subject_list[:20] # select the number of subject you want to analyse
@@ -112,17 +119,11 @@ for f in freqbands: # the code iterates over each frequency band
     for subject in tqdm(subject_select, desc="subject"): # the code iterates over each subject in the list subject_select
         paradigm = MotorImagery(events=events, n_classes=len(events), fmin=fmin, fmax=fmax) #A MotorImagery object is created with the current minimum and maximum frequencies.
 
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
-
         #ga = GetAvalanches(subject, avalanches_path) # creates a GetDataMemory object (gd) with the specified subject, frequency range (f), spectral metric (plv), and the functional connectivity matrices previously computed (data_av).
         gan = GetAvalanchesNodal(subject, avalanches_path)
 
         pipeline = {} #creates an empty dictionary to store the classifier pipelines
-        #pipeline["avn"+"-LDA"] = Pipeline(steps=[('gav', gav), ('lda', LDA(solver="lsqr", shrinkage="auto"))])
-        #pipeline["avn"+"-SVC"] = Pipeline(steps=[('gav', gav), ('svc', GridSearchCV(SVC(), {"kernel": ("linear", "rbf"), "C": [0.1, 1, 10]}, cv=3))])
         pipeline["avn"+"-RF"] = Pipeline(steps=[('gan', gan), ('rf', GridSearchCV(RandomForestClassifier(), {'n_estimators': [70,75,80,85,90], 'min_samples_leaf': [1,2,3], 'max_features': ['sqrt','log2'], 'max_depth': [3,5,7,9], 'random_state': [42]}, cv=5))])
-        #pipeline["avn"+"-LR"] = Pipeline(steps=[('gav', gav), ('lr', LogisticRegression(penalty="elasticnet", l1_ratio=0.15, intercept_scaling=1000.0, solver="saga"))])
 
         # Train and evaluate
         _, y, metadata = paradigm.get_data(dataset, [subject], return_epochs=True) # _ is the epoches object, y is an array of labels
@@ -167,41 +168,30 @@ for f in freqbands: # the code iterates over each frequency band
                     dataset_av.append(res)
 
 dataset_av = pd.DataFrame(dataset_av)
-dataset_av.to_csv(df_path+"avn_RF_feature_importance_ranking.csv")
-
-## concat the dataframe with the results from classification_comparison
-dataset_CSP = pd.read_csv(df_path+"CSP_LDA.csv")
-dataset_fc = pd.read_csv(df_path+"fc_LDA_SVC.csv")
-dataset_av = pd.read_csv(df_path+"av_LDA_SVC_RF_LR.csv")
-dataset_avn = pd.read_csv(df_path+"avn_LDA_SVC_RF_LR.csv")
-dataset_av_opt = pd.read_csv(df_path+"av_opt_LDA_SVC_RF_LR_tuned_hyperparameters.csv")
-dataset_avn_opt = pd.read_csv(df_path+"avn_opt_LDA_SVC_RF_LR_tuned_hyperparameters.csv")
-
-concat_fc_av = pd.concat((dataset_av, dataset_fc))
-concat_CSP_fc_av_avn = pd.concat((dataset_CSP, dataset_fc, dataset_av, dataset_avn, dataset_av_opt, dataset_avn_opt))
+# dataset_av.to_csv(df_path+"avn_RF_feature_importance_ranking.csv")
 
 ## Feature importance ranking
 importances_matrix = np.vstack(dataset_av["importances"])
 median_importances = np.median(importances_matrix, axis=0)
 labels = data_avalanches['labels_DK'] # Get the labels for the features
 
-#Saving median importances in a matlab file (for mcc to plot on topographical map)
+#Saving median importances in a matlab file
 #savemat('avn_opt_median_importance_all_subject.mat', {'median_importances': median_importances})
 
 # Rank from large to small values (used for thresholding)
-indices = np.argsort(median_importances)[::-1] # Rank the feature importances and print them
+indices = np.argsort(median_importances)[::-1]
 indices = pd.DataFrame(indices)
-indices.to_csv(df_path+"avn_feature_indices_median.csv")
+# indices.to_csv(df_path+"avn_opt_feature_indices_median.csv")
 
 # # Rank from small the large values
-# indices_reversed = np.argsort(median_importances) # Rank the feature importances and print them
+# indices_reversed = np.argsort(median_importances)
 # indices_reversed = pd.DataFrame(indices_reversed)
-# indices_reversed.to_csv(df_path+"avn_feature_indices_reversed_median.csv")
+# indices_reversed.to_csv(df_path+"avn_opt_feature_indices_reversed_median.csv")
 
 # Get the top 20 features and their importance scores
-top_20_indices = indices[:20]
-top_20_features = [labels[i] for i in top_20_indices]
-top_20_scores = median_importances[top_20_indices]
+top_20_indices = indices[:20][0]
+top_20_features = [labels[i] for i in top_20_indices.T]
+top_20_scores = median_importances[top_20_indices.values]
 
 # Plotting
 plt.figure(figsize=(8, 6))

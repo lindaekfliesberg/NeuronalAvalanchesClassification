@@ -13,8 +13,6 @@ import warnings
 
 import mne
 import mat73
-import pickle
-import os.path
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -27,7 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score, cohen_kappa_score
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, ShuffleSplit
 from matplotlib import pyplot as plt
 
 import moabb
@@ -36,14 +34,29 @@ from moabb.datasets.base import BaseDataset
 import moabb.analysis.plotting as moabb_plt
 from moabb.analysis.meta_analysis import compute_dataset_statistics, find_significant_differences
 
-from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal
+from Scripts.fc_class import GetDataMemory, GetAvalanches, GetAvalanchesNodal
 
-moabb.set_log_level("info")
-warnings.filterwarnings("ignore")
-
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data and the neuronal avalanche transition matrices
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
+# avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
+
+moabb.set_log_level("info")
+warnings.filterwarnings("ignore")
 
 ## create class for the MEG data
 class MEGdataset(BaseDataset):
@@ -89,16 +102,9 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
         return [meg_path, avalanches_path]
 
 dataset = MEGdataset()
-
-# Load avalanches to plot avalanche matrices
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 # list of variables
 subject_select = dataset.subject_list[:20] # select the number of subject you want to analyse
@@ -112,9 +118,6 @@ for f in freqbands: # the code iterates over each frequency band
     fmax = freqbands[f][1]
     for subject in tqdm(subject_select, desc="subject"): # the code iterates over each subject in the list subject_select
         paradigm = MotorImagery(events=events, n_classes=len(events), fmin=fmin, fmax=fmax) #A MotorImagery object is created with the current minimum and maximum frequencies.
-
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
 
         #ga = GetAvalanches(subject, avalanches_path) # creates a GetDataMemory object (gd) with the specified subject, frequency range (f), spectral metric (plv), and the functional connectivity matrices previously computed (data_av).
         gan = GetAvalanchesNodal(subject, avalanches_path)
@@ -131,7 +134,7 @@ for f in freqbands: # the code iterates over each frequency band
         for session in np.unique(metadata.session): # the code iterates over each session in the metadata (in this case only one session)
             ix = metadata.session == session # ix is assigned to a boolean array indicating the indices in metadata.session where the value is equal to session.
             cv = StratifiedKFold(5, shuffle=True, random_state=42)
-            #cv = StratifiedKFold(50, shuffle=True, random_state=42)
+            #cv = ShuffleSplit(50,test_size=0.2, random_state=21)
             le = LabelEncoder() # le is created to encode the labels
             y_ = le.fit_transform(y[ix]) # le  fitted to the labels of the current session (y[ix])
             X_ = X[ix]
@@ -207,7 +210,7 @@ sns.stripplot(x="score", y="pipeline", data=concat_fc_av, size=4, color=".3", li
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-plt.savefig(fig_path+"boxplot_pipeline_comparison_group.png", dpi=300)
+#plt.savefig(fig_path+"boxplot_pipeline_comparison_group.png", dpi=300)
 plt.show()
 
 ## print averaged evaluation scores across subjects and pipelines
@@ -230,12 +233,12 @@ sns.stripplot(x="score_mean", y=pipeline_cat, data=dataset_average, size=4, colo
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
-plt.savefig(fig_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
+#plt.savefig(fig_path+"boxplot_pipeline_comparison_group_mean.png", dpi=300)
 plt.show()
 
 ## Seaborn boxplot to compare pipelines for both fc and av at a subject level to see the differences across splits
 plt.close('all')
 g=sns.catplot(x='accuracy', y='pipeline', data=concat_fc_av, col='subject', col_wrap=5, kind='box', orient='h', whis=[0, 100], width=.6, palette="vlag")
 g.map_dataframe(sns.stripplot, x='accuracy', y='pipeline', data=concat_fc_av, orient='h', palette=["#404040"])
-plt.savefig(fig_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
+#plt.savefig(fig_path+"boxplot_pipeline_comparison_individual.png", dpi=300)
 plt.show()

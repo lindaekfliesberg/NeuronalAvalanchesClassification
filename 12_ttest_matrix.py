@@ -17,14 +17,23 @@ from matplotlib import pyplot as plt
 from scipy.io import savemat
 from mne.stats import bonferroni_correction, fdr_correction
 
-# Load avalanches to plot avalanche matrices
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
-
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path and the neuronal avalanche transition matrices
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
 
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
+
+#######################################################################
 ##Plot difference between conditions (rest, right) across trials per subject
 # Extract the data and labels
 data = data_avalanches["Data_moabb"][0][0]
@@ -47,9 +56,10 @@ plt.close('all')
 plt.imshow(diff_matrix, cmap='coolwarm', vmin=-0.2, vmax=0.2)
 plt.title('Mean matrix (Right - Rest) for subject_0')
 plt.colorbar()
-plt.savefig(fig_path+"mean_matrix_subject_0.png", dpi=300)
+#plt.savefig(fig_path+"mean_matrix_subject_0.png", dpi=300)
 plt.show()
 
+#######################################################################
 ## Plot difference between conditions (rest, right) across subjects
 # Extract the data and labels for all subjects
 data = data_avalanches["Data_moabb"]
@@ -77,9 +87,10 @@ plt.close('all')
 plt.imshow(mean_diff_matrix, cmap='coolwarm', vmin=-0.04, vmax=0.04)
 plt.title('Mean matrix (Right - Rest) for all subjects')
 plt.colorbar()
-plt.savefig(fig_path+"mean_matrix_all_subjects.png", dpi=300)
+#plt.savefig(fig_path+"mean_matrix_all_subjects.png", dpi=300)
 plt.show()
 
+#######################################################################
 ## Plotting matrix containing t-test values for single subject
 # Extract the data and labels
 data = data_avalanches["Data_moabb"][0][0]
@@ -132,7 +143,7 @@ plt.close('all')
 plt.imshow(ttest_matrix, cmap='coolwarm', vmin=-5, vmax=5)
 plt.title('T-test matrix for single subject')
 plt.colorbar()
-plt.savefig(fig_path+"ttest_matrix_subject_0.png", dpi=300)
+#plt.savefig(fig_path+"ttest_matrix_subject_0.png", dpi=300)
 plt.show()
 
 plt.close('all')
@@ -140,7 +151,7 @@ plt.close('all')
 plt.imshow(pvalue_matrix, cmap='hot', vmin=0, vmax=0.05)
 plt.title('P-value matrix for single subject')
 plt.colorbar()
-plt.savefig(fig_path+"pvalue_matrix_subject_0.png", dpi=300)
+#plt.savefig(fig_path+"pvalue_matrix_subject_0.png", dpi=300)
 plt.show()
 
 ################################################################################
@@ -233,13 +244,13 @@ filtered_pvalue_matrix = np.where(pvalue_mask, pvalue_matrix, np.nan)
 savemat('av_opt_ttest_matrix_all_subjects_pvalue<0.05.mat', {'ttest_matrix': filtered_ttest_matrix})
 savemat('av_opt_pvalue_matrix_all_subjects_pvalue<0.05.mat', {'pvalue_matrix': filtered_pvalue_matrix})
 
-## Visualization
+# Visualization
 plt.close('all')
 # Plot the t-test matrix
 plt.imshow(ttest_matrix, cmap='coolwarm')
 plt.title('T-test matrix for all subjects')
 plt.colorbar()
-plt.savefig(fig_path+"ttest_matrix_all_subjects.png", dpi=300)
+#plt.savefig(fig_path+"ttest_matrix_all_subjects.png", dpi=300)
 plt.show()
 
 plt.close('all')
@@ -247,7 +258,7 @@ plt.close('all')
 plt.imshow(pvalue_matrix, cmap='hot', vmin=0, vmax=0.05)
 plt.title('P-value matrix for all subjects')
 plt.colorbar()
-plt.savefig(fig_path+"pvalue_matrix_all_subjects.png", dpi=300)
+#plt.savefig(fig_path+"pvalue_matrix_all_subjects.png", dpi=300)
 plt.show()
 
 #######################################################################

@@ -39,9 +39,25 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal
 
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data and the neuronal avalanche transition matrices
+- Run 6_av_RF_n_estimators_opt.py and insert the best performing n_estimator in the pipeline
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
+# avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -90,16 +106,9 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
         return [meg_path, avalanches_path]
 
 dataset = MEGdataset()
-
-# Load avalanches to plot avalanche matrices
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 # list of variables
 subject_select = dataset.subject_list[:20] # select the number of subject you want to analyse
@@ -107,9 +116,7 @@ freqbands = {"defaultBand": [8, 35]}
 events = ["right_hand", "rest"]
 
 ## parameters to be tuned
-#n_estimators_test = [1,10,25,40,55,70,85,100,115,130]
 min_samples_leaf_test = [1,2,3,4,5,6]
-#max_depths_test = np.linspace(1, 32, 32, endpoint=True)
 
 ## compute results
 dataset_av = list()  # creating an empty list to store the results for each subject and frequency
@@ -119,22 +126,13 @@ for f in freqbands: # the code iterates over each frequency band
     for subject in tqdm(subject_select, desc="subject"): # the code iterates over each subject in the list subject_select
         paradigm = MotorImagery(events=events, n_classes=len(events), fmin=fmin, fmax=fmax) #A MotorImagery object is created with the current minimum and maximum frequencies.
 
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
-
         #ga = GetAvalanches(subject, avalanches_path) # creates a GetDataMemory object (gd) with the specified subject, frequency range (f), spectral metric (plv), and the functional connectivity matrices previously computed (data_av).
         gav = GetAvalanchesNodal(subject, avalanches_path)
 
         pipeline = {} #creates an empty dictionary to store the classifier pipelines
 
-        #for kk_n_estimators in n_estimators_test:
-            #pipeline["avv"+"-RF_test"] = Pipeline(steps=[('gav', gav), ('rf', RandomForestClassifier(n_estimators=kk_n_estimators))])
-
         for kk_min_samples in min_samples_leaf_test:
             pipeline["avv"+"-RF_test"] = Pipeline(steps=[('gav', gav), ('rf', RandomForestClassifier(n_estimators=80, min_samples_leaf=kk_min_samples))])
-
-        #for kk_max_depths in max_depths_test:
-            #pipeline["avv"+"-RF_test"] = Pipeline(steps=[('gav', gav), ('rf', RandomForestClassifier(n_estimators=kk_n_estimators, min_samples_leaf=kk_min_samples, max_depths=kk_max_depths))])
 
             # Train and evaluate
             _, y, metadata = paradigm.get_data(dataset, [subject], return_epochs=True) # _ is the epoches object, y is an array of labels
@@ -166,9 +164,7 @@ for f in freqbands: # the code iterates over each frequency band
                             "samples": len(y_),
                             "time": 0.0,
                             "split": idx,
-                            #"n_estimators": kk_n_estimators,
                             "n_leafs": kk_min_samples
-                            #"max_depths": kk_max_depths
 
                         }
                         res = {

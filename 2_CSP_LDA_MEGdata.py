@@ -20,7 +20,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import clone
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score, cohen_kappa_score
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, ShuffleSplit
 import mat73
 import mne
 from tqdm import tqdm
@@ -30,9 +30,20 @@ from moabb.datasets.base import BaseDataset
 from moabb.evaluations import WithinSessionEvaluation
 from moabb.paradigms import MotorImagery
 
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+file_path = "/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat"
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -82,7 +93,6 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        file_path = "/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat"
         return [file_path]
 
 dataset = MEGdataset()
@@ -98,16 +108,12 @@ pipeline = {}
 pipeline["CSP"+"-LDA"] = make_pipeline(CSP(n_components=8), LDA(solver="lsqr", shrinkage="auto"))
 
 # # evaluation
-evaluation = WithinSessionEvaluation(
-    paradigm=paradigm, datasets=dataset, overwrite=True, suffix="newdataset"
-)
+evaluation = WithinSessionEvaluation(paradigm=paradigm, datasets=dataset, overwrite=True, suffix="newdataset")
 
 results = evaluation.process(pipeline)
-results.to_csv(df_path+"CSP_LDA.csv")
+#results.to_csv(df_path+"CSP_LDA.csv")
 
 fig, ax = plt.subplots(figsize=(8, 7))
 results["subj"] = results["subject"].apply(str)
-sns.barplot(
-    x="score", y="subj", hue="session", data=results, orient="h", palette="viridis", ax=ax
-)
+sns.barplot(x="score", y="subj", hue="session", data=results, orient="h", palette="viridis", ax=ax)
 plt.show()

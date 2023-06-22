@@ -10,7 +10,6 @@ Classifier: shLDA
 # import packages
 import warnings
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 from mne.decoding import CSP
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -21,6 +20,15 @@ from moabb.datasets import BNCI2014001
 from moabb.evaluations import WithinSessionEvaluation
 from moabb.paradigms import LeftRightImagery
 
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
@@ -55,6 +63,3 @@ sns.barplot(
     x="score", y="subj", hue="session", data=results, orient="h", palette="viridis", ax=ax
 )
 plt.show()
-
-
-

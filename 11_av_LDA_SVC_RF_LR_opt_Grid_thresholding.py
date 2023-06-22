@@ -37,12 +37,27 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory, GetAvalanches, GetAvalanchesNodal, GetAvalanchesNodalThreshold
 
-moabb.set_log_level("info")
-warnings.filterwarnings("ignore")
-
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data and the neuronal avalanche transition matrices
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
+# avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
+avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
+#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
+data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
+
+moabb.set_log_level("info")
+warnings.filterwarnings("ignore")
 
 ## create class for the MEG data
 class MEGdataset(BaseDataset):
@@ -88,23 +103,16 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        meg_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
-        #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-        avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
         return [meg_path, avalanches_path]
 
 dataset = MEGdataset()
-
-# Load avalanches to plot avalanche matrices
-#data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat')
-data_avalanches = mat73.loadmat('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat')
 
 # list of variables
 subject_select = dataset.subject_list[:20] # select the number of subject you want to analyse
 freqbands = {"defaultBand": [8, 35]}
 events = ["right_hand", "rest"]
 ranking_threshold = [10,20,30,40,50,60,70,80,90,100]
-ranking = pd.read_csv('/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Dataframes/avn_opt_feature_indices_reversed_median.csv')
+ranking = pd.read_csv(df_path+'avn_opt_feature_indices_median.csv')
 
 ## compute results
 dataset_av = list()  # creating an empty list to store the results for each subject and frequency
@@ -115,9 +123,6 @@ for f in freqbands: # the code iterates over each frequency band
         paradigm = MotorImagery(events=events, n_classes=len(events), fmin=fmin, fmax=fmax) #A MotorImagery object is created with the current minimum and maximum frequencies.
         for threshold in ranking_threshold:
             features = int(len(ranking) * threshold / 100)
-
-            #avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/ATM_MEG_DK.mat'
-            avalanches_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/Opt_ATM_MEG_DK.mat'
 
             #ga = GetAvalanches(subject, avalanches_path) # creates a GetDataMemory object (gd) with the specified subject, frequency range (f), spectral metric (plv), and the functional connectivity matrices previously computed (data_av).
             #gan = GetAvalanchesNodal(subject, avalanches_path)
@@ -147,7 +152,6 @@ for f in freqbands: # the code iterates over each frequency band
                         acc = balanced_accuracy_score(y_[test], yp) # The balanced accuracy in binary and multiclass classification problems to deal with imbalanced datasets.
                         auc = roc_auc_score(y_[test], yp) # ROC AUC (Area Under the Receiver Operating Characteristic Curve) is a measure of the trade-off between true positive rate (TPR) and false positive rate (FPR) at different classification thresholds. It is commonly used to evaluate binary classifiers and is a useful metric when the classes are not heavily imbalanced.
                         kapp = cohen_kappa_score(y_[test], yp) # measures the agreement between the observed and the expected agreement between two raters, accounting for the agreement that could be expected by chance.
-                        #importances = cvclf.named_steps["rf"].best_estimator_.feature_importances_
 
                         res_info = {
                             "subject": subject,
@@ -160,7 +164,6 @@ for f in freqbands: # the code iterates over each frequency band
                             "samples": len(y_),
                             "time": 0.0,
                             "split": idx,
-                            #"importances": importances,
                             "threshold": threshold,
                         }
                         res = {
@@ -201,11 +204,12 @@ dataset_subject_14 = dataset_av[dataset_av["subject"] == 14]
 
 ## ANOVA test
 # Perform a one-way ANOVA test for each pipeline
-for pipeline in dataset_subject_0['pipeline'].unique():
+for pipeline in dataset_av['pipeline'].unique():
     # Select data for the current pipeline
-    pipeline_data = dataset_subject_0[dataset_subject_0['pipeline'] == pipeline]
+    pipeline_data = dataset_av[dataset_av['pipeline'] == pipeline]
     # Perform the ANOVA test
     aov = pg.anova(data=pipeline_data, dv='score', between='threshold', detailed=True)
+    posthoc = pg.pairwise_tukey(data=pipeline_data, dv='score', between='threshold')
     # Print the ANOVA table for the current pipeline
     print(f"ANOVA table for pipeline {pipeline}:")
     print(aov)
@@ -218,7 +222,7 @@ for pipeline in dataset_subject_0['pipeline'].unique():
     plt.ylabel('Score')
     plt.title(f'Pipeline {pipeline}')
     plt.show()
-    plt.savefig(fig_path + f'Thresholding_{pipeline}.png', dpi=300)
+    #plt.savefig(fig_path + f'Thresholding_{pipeline}.png', dpi=300)
 
 ## Plotting an overview of the accuracy score variance for different thresholds
 sns.catplot(data=dataset_av[dataset_av["pipeline"]=="avn-LDA"], y="score", x="threshold", col="subject", col_wrap=5)

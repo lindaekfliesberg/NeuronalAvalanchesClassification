@@ -38,9 +38,20 @@ from moabb.analysis.meta_analysis import compute_dataset_statistics, find_signif
 
 from Scripts.fc_class import FunctionalTransformer, EnsureSPD, GetDataMemory
 
+"""
+=========================================================================================
+TO DO:
+- Add all the scripts in a folder named Scripts
+- Create two folders named Dataframes and Figures to store dataframes and figures
+- Create a folder named Datasets and add all the datasets (MEG data, ATMs)
+- Update root path, path for MEG data
+=========================================================================================
+"""
 root_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches'
 df_path = root_path + '/Dataframes/'
 fig_path = root_path + '/Figures/'
+
+file_path = "/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat"
 
 moabb.set_log_level("info")
 warnings.filterwarnings("ignore")
@@ -90,7 +101,6 @@ class MEGdataset(BaseDataset):
         if subject not in self.subject_list:
             raise (ValueError("Invalid subject number"))
 
-        file_path = '/Users/linda.ekfliesberg/Documents/GitHub/NeuronalAvalanches/Datasets/MEG_DK.mat'
         return [file_path]
 
 dataset = MEGdataset()
