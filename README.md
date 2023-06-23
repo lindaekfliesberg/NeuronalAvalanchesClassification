@@ -19,7 +19,7 @@
 
 - 10_av_LDA_SVC_RF_LR_opt_Grid_ranking.py uses the random forest pipeline to compute the feature importance ranking that is used for feature selection.
 
-- 11_av_LDA_SVC_RF_LR_opt_Grid_thresholding.py performes features selection by testing the optimal number of features to include in the pipeline.
+- 11_av_LDA_SVC_RF_LR_opt_Grid_thresholding.py performs features selection by testing the optimal number of features to include in the pipeline.
 
 - 12_ttest_matrix.py takes the precomputed neuronal avalanche transition matrices and compute the t-test between conditions.
 
